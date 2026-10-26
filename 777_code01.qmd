@@ -1,0 +1,1646 @@
+---
+title: "Extrahepatic blood supply to hepatocellular carcinoma: a meta-analysis and systematic review"
+subtitle: "Statistical report"
+format:
+  html:
+    embed-resources: true
+    keep-md: false
+    toc: true
+    toc-expand: 3
+    toc-depth: 4
+    toc-location: left
+    number-sections: true
+    number-depth: 4
+    code-fold: true
+    code-tools: true
+    code-summary: "Open code"
+    grid:
+      body-width: 1000px
+      sidebar-width: 600px
+      margin-width: 100px
+editor: source
+theme: darkly
+highlight-style: github-dark
+fontsize: 12 px
+code-block-bg: "#2D2D31"
+bibliography: ../references.bib
+fontcolor: "#D1D1D1"
+monobackgroundcolor: "#3B3B3B"
+---
+
+------------------------------------------------------------------------
+
+```{r setup, echo=FALSE}
+path <- '/home/ticf/secured_data/GitRepo/ticf/777_PAOR_metaanalysis/'
+knitr::opts_chunk$set(collapse = TRUE)
+knitr::opts_knit$set(root.dir = path)
+```
+
+```{css, echo=FALSE}
+code.sourceCode {
+  font-size: 0.86em;
+  border: 1px solid #ffffff; 
+  padding: 9px; 
+}
+
+code{
+    color: #EEE8AA; 
+    background: #96464D
+}
+
+.equation {
+  text-align: center;
+  display: block;
+  margin: auto;
+}
+
+body {
+  text-align: justify;
+}
+```
+
+{{< include ../README.md >}}
+
+# Statistical methodology
+
+## Long version (supplements, GitHub)
+
+All analyses and visualizations were done in R @R. Statistical analyses were done using Bayesian hierarchical models implemented in R (version 4.4.3). Bayesian mixed-effects models were used as framework for meta-analysis since it provides coherent estimation of pooled effects, between-study heterogeneity, and predictive uncertainty; this approach is particularly advantageous when the number of included studies is limited . All models were fitted using the 'brms' package \[@brms-2\]. All models were fitted with at least 6,000 MCMC iterations per chain (including 2,000 warm-up iterations), using four chains per model. Posterior predictive checks were used to assess models fits. Model comparison was performed using approximate leave-one-out cross-validation with moment matching and exact refits for problematic observations as implemented in the 'loo' package [@loo-2]. Posterior summaries are reported as medians with 95% credible intervals defined by the 2.5th and 97.5th percentiles of the posterior distribution.
+
+Prevalence of EHC was analysed using a hierarchical binomial model with a logit link. For each study $j$, the number of patients with EHC $y_j$ was modelled as $y_j \sim \mathrm{Binomial}(n_j, p_j)$, where $n_j$ denotes the number of patients in the study and $p_j$ the underlying prevalence. Between-study heterogeneity was modelled using a study-specific random intercept on the logit scale, $\mathrm{logit}(p_j) = \alpha + u_j$, with $u_j \sim \mathcal N(0, \tau^2)$. Between-study heterogeneity in prevalence was quantified using the posterior distribution of $\tau$, representing the standard deviation of the random intercepts on the logit scale. In addition, an approximate latent-scale intraclass correlation coefficient was calculated as $I^2 = \tau^2 / (\tau^2 + \pi^2/3)$, reflecting the proportion of total variance in the linear predictor attributable to between-study heterogeneity. To aid interpretation, a 95% predictive interval for the true underlying prevalence in a new study was derived by simulating study-specific random effects from $\mathcal N(0, \tau^2)$ and transforming the resulting linear predictors to the prevalence scale.
+
+The number of EHC vessels per patient was analysed using a Poisson mixed-effects model with log-link. Let $Y_j$ denote the total number of EHC vessels observed in study $j$. We modelled $Y_j \sim \mathrm{Poisson}(\mu_j)$ with $\log(\mu_j) = \alpha + u_j + \log(n_j)$, where $\log(n_j)$ was included as an offset to model the expected count per patient and $u_j \sim \mathcal N(0, \tau^2)$ captured between-study heterogeneity on the log-rate scale. The pooled estimate corresponds to the expected number of EHC vessels per patient in a typical study. Between-study heterogeneity in EHC counts was summarised using the posterior distribution of $\tau$ on the log scale and by a Poisson variance partition coefficient (VPC), defined as the proportion of total variance in the outcome attributable to between-study variability. The VPC was estimated using posterior simulation based on the fitted model. A 95% predictive interval for the true underlying EHC count per patient in a new study was obtained by simulating new study-level random effects. As a sensitivity analysis, negative binomial mixed-effects models were fitted to allow for residual overdispersion beyond between-study heterogeneity. However, the negative binomial model did not improve predictive performance and exhibited unstable estimation of the dispersion parameter with frequent divergent transitions; therefore, the Poisson specification was retained.
+
+The distribution of specific arterial sources of EHC was analyzed using two separate Bayesian hierarchical multinomial logistic regression models to assess different levels of anatomical granularity: (1) a coarse classification into 6 major arterial groups and (2) a detailed classification into 22 specific arterial branches. 
+For each study $j$, the vector of counts $\mathbf{y}_j = (y_{j,1}, \dots, y_{j,K})$ for $K$ arterial categories was modeled as $\mathbf{y}_j \sim \mathrm{Multinomial}(n_j, \mathbf{p}_j)$, where $n_j$ is the total number of EHCs in study $j$ and $\mathbf{p}_j$ is the vector of underlying proportions. To account for between-study heterogeneity, study-specific random intercepts were included for each non-reference category on the logit scale:$\log\left(\frac{p_{j,k}}{p_{j,\mathrm{ref}}}\right) = \alpha_k + u_{j,k}$.
+The inferior phrenic artery served as the reference category, and $u_{j,k} \sim \mathcal{N}(0, \tau_k^2)$ represents the study-specific random effect for category $k$. To improve model convergence and ensure stable estimation—particularly for rare arterial sources with zero observed counts in some studies, we employed "data-driven" weakly informative priors for the global intercepts $\alpha_k$. These priors were centered on the log-odds of the overall empirical proportions across all studies, using a Laplace-like smoothing adjustment: $\alpha_k \sim \text{Student-t}(3, \mu_{\text{prior}}, 100)$, where $\mu_{\text{prior}} = \log((n_k + 0.01) / (n_{\text{ref}} + 0.01))$. Between-study standard deviations were assigned $\tau_k \sim \text{Exponential}(1)$ priors.
+Pooled proportions were derived by transforming global intercepts to the probability scale using the softmax function. Heterogeneity for each arterial source was quantified by the category-specific standard deviation $\tau_k$ on the logit scale and a latent-scale intraclass correlation coefficient, $I^2_k = \tau_k^2 / (\tau_k^2 + \pi^2/3)$. These measures reflect the proportion of total variability in the linear predictor attributable to between-study differences for a given category relative to the reference. For the reference category, $\tau_k$ and $I^2_k$ are not defined under this parameterization. Finally, 95% predictive intervals (PIs) for the proportions in a new study were calculated by simulating new study-level random effects, accounting for the compositional nature of the data.
+
+## Short version (manuscript body)
+
+All analyses and visualizations were done in R @R. Statistical analyses were done using Bayesian hierarchical models implemented in R (version 4.4.3). Bayesian mixed-effects models as framework for meta-analysis since it provides coherent estimation of pooled effects, between-study heterogeneity, and predictive uncertainty; this approach is particularly advantageous when the number of included studies is limited. All models were fitted using the 'brms' package \[@brms-2\]. Posterior summaries are reported as medians with 95% credible intervals defined by the 2.5th and 97.5th percentiles of the posterior distribution. Models fits were assessed using posterior predictive checks.
+
+EHC prevalence was analysed using a hierarchical binomial model with a logit link and a study-specific random intercept. Between-study heterogeneity was quantified using the posterior distribution of the standard deviation of the study-level random intercepts, representing variability in prevalence across studies beyond binomial sampling error. In addition, heterogeneity was summarised using an approximate latent-scale intraclass correlation coefficient, reflecting the proportion of total variability attributable to between-study differences. A predictive interval was derived by simulating new study-level random effects from the fitted model to characterise the expected range of the true underlying prevalence in a new study.
+
+The number of EHC vessels per patient was analysed using a Poisson mixed-effects model with a log link and an offset for the number of patients. Between-study heterogeneity was quantified using the posterior distribution of the standard deviation of the random intercepts on the log-rate scale and further summarised using a Poisson variance partition coefficient (VPC), defined as the proportion of total variance attributable to between-study variability. A predictive interval was obtained by simulating new study-level random effects from the fitted model to describe the expected range of the true underlying EHC count per patient in a new study.
+
+The distribution of specific arterial sources for EHC was analysed using a hierarchical multinomial model, which accounts for the compositional nature of the data where the proportions of all identified arteries must sum to 100%. The inferior phrenic artery was defined as the reference category. 
+
+# Initiation
+
+Upload initiation file
+
+```{r}
+getwd()
+setwd(path)
+source('r/777_initiation.R')
+
+data_counts <- na.omit(data_prevalence)
+```
+
+Find empirical proportion/count
+
+```{r}
+p_hat_pooled <- with(
+  data_prevalence,
+  sum(n_EHC_patients, na.rm = TRUE) /
+    sum(n_patients, na.rm = TRUE)
+)
+
+count_hat_pooled <- with(
+  data_counts,
+  sum(n_EHC, na.rm = TRUE) /
+    sum(n_patients, na.rm = TRUE)
+)
+
+data_prevalence <- data_prevalence %>%
+  dplyr::mutate(
+    empirical_proportion = n_EHC_patients / n_patients,
+    emp_EHCcount_perPat = n_EHC / n_patients
+  )
+```
+
+# Prevalence
+
+## Show data
+
+```{r}
+kableExtra::kable(
+  data_prevalence %>%  
+    dplyr::select(-Year) 
+  )
+```
+
+
+## Set prior
+
+```{r}
+prior_prevalence <- c(
+  set_prior(paste0('student_t(3, ', logit(p_hat_pooled), ', 100)'), class = "Intercept"),
+  prior(exponential(1), class = "sd")
+)
+```
+
+## Fit model
+
+```{r}
+
+run2(
+  name = 'model_prevalence',
+  expr = {
+    brm(
+      n_EHC_patients | trials(n_patients) ~ 1 + (1 | Autor),
+      family = binomial(link = "logit"),
+      data = data_prevalence,
+      prior = prior_prevalence,
+      backend = "cmdstanr",
+      seed = seeding,
+      cores = 1, chains = 4,
+      iter = 6000, warmup = 2000,
+      control = list(adapt_delta = 0.95)
+    )
+    },
+  reuse = TRUE
+  )
+
+## prior summary
+prior_summary(model_prevalence)
+```
+
+## Check model
+
+```{r}
+
+## Model summary
+summary(model_prevalence)
+
+## Check convergence and posterior distribution
+plot(model_prevalence)
+
+##
+pp_check(model_prevalence)
+```
+
+## Heterogeneity between studies
+
+```{r}
+
+## Tau (SD of random effect on logit scale)
+tau <- as_draws_df(model_prevalence)$sd_Autor__Intercept
+quantile(tau, c(.025, .5, .975))
+
+## Logistic ICC
+I2 <- tau^2 / (tau^2 + (pi^2 / 3))
+quantile(I2, c(.025, .5, .975))
+
+## 95% Predictive interval for a true prevalence in a new study
+set.seed(seeding)
+d <- as_draws_df(model_prevalence)
+eta_new <- rnorm(
+  length(d$b_Intercept),
+  mean = d$b_Intercept,
+  sd = d$sd_Autor__Intercept
+)
+
+p_new <- inv_logit(eta_new)
+quantile(p_new, c(.025, .5, .975))
+
+## Prepare summary info about heterogeneity between studies
+fmt_3 <- function(x) sprintf("%.3f", x)
+ci_txt <- function(q) paste0(fmt_3(q[2]), " [", fmt_3(q[1]), ", ", fmt_3(q[3]), "]")
+
+tau_ci <- quantile(tau, c(.025, .5, .975))
+I2_ci <- quantile(I2, c(.025, .5, .975))
+pi_ci <- quantile(p_new, c(.025, .5, .975))
+
+note_tau <- paste0(
+  "Between-study SD τ (logit scale): ",
+  ci_txt(tau_ci),
+  "."
+)
+
+note_I2 <- paste0(
+  "Logistic ICC (I², latent-scale approximation): ", ci_txt(I2_ci), "."
+)
+
+note_pi <- paste0(
+  "95% predictive interval for true prevalence in a new study: ",
+  ci_txt(pi_ci),
+  "."
+)
+```
+
+Between-study heterogeneity was quantified by $\tau$, defined as the standard deviation of the study-specific random intercepts on the logit scale. Posterior samples of $\tau$ were obtained directly from the fitted hierarchical model, and uncertainty was summarized using the median and the 2.5th and 97.5th percentiles of the posterior distribution.
+
+$I^2$ was calculated as an approximate heterogeneity index on the latent logit scale using the variance of the logistic distribution. Specifically, with between-study heterogeneity $\tau^2$ defined as the variance of the study-specific random intercepts, we computed $I^2 = \frac{\tau^2}{\tau^2 + \pi^2/3}$. This measure represents the proportion of total variance in the linear predictor $\text{logit}(p)$ attributable to between-study heterogeneity and should be interpreted as a latent-scale approximation applicable to binomial models with a logit link.
+
+The between-study variability in prevalence was further summarized using a 95% predictive interval for the true underlying prevalence in a new study. For each posterior draw, a study-specific logit-prevalence was generated as $\eta_{\text{new}}=\mu+u_{\text{new}}$, where $\mu$ denotes the global intercept and $u_{\text{new}}\sim\mathcal N(0,\tau^2)$ represents a random effect for a hypothetical new study. These values were transformed to the prevalence scale using the inverse-logit function, and the predictive interval was defined by the 2.5th and 97.5th percentiles of the resulting distribution.
+
+## Tabular results
+
+```{r}
+nd <- data.frame(
+  Autor = unique(data_prevalence$Autor),
+  n_patients = 1
+)
+
+fit <- fitted(
+  model_prevalence,
+  newdata = nd,
+  re_formula = NULL,
+  scale = "response",
+  summary = TRUE
+)
+
+ran_effs <- data.frame(
+  Autor = nd$Autor,
+  fit[, c("Estimate", "Q2.5", "Q97.5")]
+)
+
+pooled_row <- data.frame(
+  Autor = "Pooled estimate",
+  Estimate = inv_logit(fixef(model_prevalence)["Intercept", "Estimate"]),
+  Q2.5 = inv_logit(fixef(model_prevalence)["Intercept", "Q2.5"]),
+  Q97.5 = inv_logit(fixef(model_prevalence)["Intercept", "Q97.5"])
+)
+
+tr <- rbind(ran_effs, pooled_row) %>%
+  dplyr::mutate(
+    Prev_empirical = c(data_prevalence$empirical_proportion, p_hat_pooled),
+    N = c(data_prevalence$n_patients, sum(data_prevalence$n_patients)),
+    N_EHC = c(data_prevalence$n_EHC_patients, sum(data_prevalence$n_EHC_patients))
+  ) %>%
+  dplyr::rename(
+    Prev_model_est = Estimate
+  ) %>%
+  dplyr::select(
+    Autor, N, N_EHC, Prev_empirical, Prev_model_est, everything()
+  )
+
+tr %>%
+  dplyr::mutate(
+    dplyr::across(
+      where(is.numeric),
+      ~ round(.x, 3)
+    )
+  ) %>%
+  dplyr::mutate(
+    `Estimated prevalence [95% CrI]` = paste0(
+      Prev_model_est, " [", `Q2.5`, ", ", `Q97.5`, "]"
+    )
+  ) %>%
+  dplyr::rename(
+    `Observed prevalence` = `Prev_empirical`
+  ) %>%
+  dplyr::select(
+    Autor, N, `Observed prevalence`, `Estimated prevalence [95% CrI]`
+  ) %>%
+  kableExtra::kable(
+    align = "lrrr",
+    caption = 'Observed and model-estimated prevalence of patients with EHC across included studies. For each study, the table reports the sample size (N), the empirical prevalence, and the study-specific posterior median prevalence with 95% credible intervals (CrI) obtained from a Bayesian hierarchical binomial model with a logit link and a random intercept for study. The pooled estimate corresponds to the prevalence in a typical study (random intercept equal to zero). Between-study heterogeneity is summarized by the standard deviation of the random intercepts (τ) on the logit scale and by an approximate latent-scale intraclass correlation coefficient (I²). The 95% predictive interval represents the expected range of the true underlying prevalence in a new study, reflecting between-study heterogeneity rather than sampling uncertainty.'
+    ) %>%
+  kableExtra::footnote(
+    general = c(note_tau, note_I2, note_pi),
+    general_title = "",
+    threeparttable = TRUE
+  ) %>% 
+    kableExtra::kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"),
+    font_size = 12
+  )
+
+```
+
+## Forest plot
+
+```{r, fig.height=5, fig.width=7}
+#| fig-cap: "Forest plot of EHC prevalence. Error bars represent 95% credible intervals (CrI) based on a mixed-effects binomial regression model, while crosses (x) represent empirical proportions. The size of the points reflects the study sample size (N)."
+#| 
+plot_data <- tr %>%
+  dplyr::mutate(
+    Autor = factor(
+      Autor,
+      levels = c(
+        "Pooled estimate",
+        data_prevalence$Autor[order(
+          data_prevalence$Year,
+          decreasing = TRUE
+        )]
+      )
+    ),
+    is_pooled = dplyr::if_else(
+      Autor == "Pooled estimate",
+      "Pooled",
+      "Study"
+    )
+  )
+
+forest_plot <- ggplot(
+  plot_data,
+  aes(
+    x = Prev_model_est,
+    y = Autor
+  )
+) +
+  geom_vline(
+    data = dplyr::filter(
+      plot_data,
+      Autor == "Pooled estimate"
+    ),
+    aes(xintercept = Prev_model_est),
+    linetype = "dashed",
+    color = "grey40"
+  ) +
+  geom_errorbarh(
+    aes(
+      xmin = Q2.5,
+      xmax = Q97.5,
+      color = is_pooled
+    ),
+    height = 0.2,
+    linewidth = 0.8
+  ) +
+  geom_point(
+    aes(
+      size = N,
+      color = is_pooled
+    )
+  ) +
+  geom_point(
+    aes(x = Prev_empirical),
+    shape = 4,
+    size = 4,
+    alpha = 0.6,
+    color = "black"
+  ) +
+  scale_color_manual(
+    values = c(
+      "Study" = "grey20",
+      "Pooled" = "firebrick"
+    )
+  ) +
+  scale_x_continuous(
+    labels = scales::percent_format(accuracy = 1),
+    limits = c(0, NA),
+    expand = expansion(mult = c(0, 0.05))
+  ) +
+  labs(
+    x = "Prevalence of EHC (95% CrI)",
+    y = NULL,
+    size = "Sample size (N)"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    panel.grid.minor = element_blank(),
+    axis.title.x = element_text(
+      size = 12
+    ),
+    axis.text.x = element_text(
+      size = 11
+    ),
+    axis.text.y = element_text(
+      size = 11,
+      face = dplyr::if_else(
+        levels(plot_data$Autor) == "Pooled estimate",
+        "bold",
+        "plain"
+      )
+    ),
+    legend.title = element_text(size = 11),
+    legend.text = element_text(size = 11)
+  ) +
+  guides(color = "none")
+
+forest_plot
+```
+
+
+# Number of ECC per a patient
+
+## Set prior 
+
+```{r}
+prior_count <- c(
+  set_prior(paste0('student_t(3, ', log(count_hat_pooled), ', 100)'), class = "Intercept"),
+  prior(exponential(1), class = "sd")
+)
+```
+
+## Fit models
+
+```{r}
+
+run2(
+  name = "model_EHC_count",
+  expr = {
+    brm(
+      n_EHC ~ 1 + offset(log(n_patients)) + (1 | Autor),
+      family = poisson(link = "log"),
+      data = data_prevalence %>% na.omit(),
+      prior = prior_count,
+      backend = "cmdstanr",
+      seed = seeding,
+      cores = 1, chains = 4,
+      iter = 6000, warmup = 2000,
+      control = list(adapt_delta = 0.95),
+      save_pars = save_pars(all = TRUE)
+    )
+  },
+  reuse = TRUE
+)
+
+run2(
+  name = "model_EHC_count_negbin",
+  expr = {
+    brm(
+      n_EHC ~ 1 + offset(log(n_patients)) + (1 | Autor),
+      family = negbinomial(link = "log"),
+      data = data_prevalence %>% na.omit(),
+      prior = prior_count,
+      backend = "cmdstanr",
+      seed = seeding,
+      cores = 1, chains = 4,
+      iter = 6000, warmup = 2000,
+      control = list(adapt_delta = 0.99),
+      save_pars = save_pars(all = TRUE)
+    )
+  },
+  reuse = TRUE
+)
+
+## prior summary
+prior_summary(model_EHC_count)
+prior_summary(model_EHC_count_negbin)
+```
+
+## Compare and check models
+
+```{r}
+## posterior predictive check
+pp_check(model_EHC_count)
+pp_check(model_EHC_count_negbin)
+
+## model comparisons
+run2(
+  name = "loo_pois",
+  loo(model_EHC_count, moment_match = TRUE, reloo = TRUE)
+)
+
+run2(
+  name = "loo_nb",
+  loo(model_EHC_count_negbin, moment_match = TRUE, reloo = TRUE)
+)
+
+loo_compare(loo_pois, loo_nb)
+
+## Model summary
+summary(model_EHC_count)
+
+## Check convergence and posterior distribution
+plot(model_EHC_count)
+```
+
+Approximate leave-one-out cross-validation with moment matching and exact refits for problematic observations (reloo) showed no improvement in predictive performance of the negative binomial model compared with the Poisson mixed-effects model ($\delta_{elpd}=-0.7$, $SE=1.1$). Posterior predictive checks favoured the Poisson specification, while the negative binomial model exhibited unstable estimation of the dispersion parameter and a non-negligible number of divergent transitions during sampling, indicating poor model fit. The Poisson model was therefore retained as the primary analysis.
+
+## Between-study heterogeneity
+
+```{r}
+
+## Tau (SD of random effect on log scale)
+tau <- as_draws_df(model_EHC_count)$sd_Autor__Intercept
+quantile(tau, c(.025, .5, .975))
+lambda <- exp(d$b_Intercept)
+
+## Poisson VPC
+set.seed(seeding)
+d <- as_draws_df(model_EHC_count)
+
+mu <- d$b_Intercept
+tau <- d$sd_Autor__Intercept
+
+S <- 2000
+u <- rnorm(length(mu) * S, 0, rep(tau, each = S))
+lam <- exp(rep(mu, each = S) + u)
+
+v_between <- tapply(lam, rep(seq_along(mu), each = S), var)
+v_total <- tapply(lam + lam^2, rep(seq_along(mu), each = S), 
+                  mean) - tapply(
+                    lam, rep(seq_along(mu), each = S
+                             ), mean)^2
+
+VPC <- v_between / v_total
+quantile(VPC, c(.025, .5, .975))
+
+## 95% Predictive interval for a true count/patient in a new study
+set.seed(seeding)
+d <- as_draws_df(model_EHC_count)
+eta_new <- rnorm(
+  length(d$b_Intercept),
+  mean = d$b_Intercept,
+  sd = d$sd_Autor__Intercept
+)
+
+p_new <- exp(eta_new)
+quantile(p_new, c(.025, .5, .975))
+
+## Prepare summary info about heterogeneity between studies
+fmt_3 <- function(x) sprintf("%.3f", x)
+ci_txt <- function(q) paste0(fmt_3(q[2]), " [", fmt_3(q[1]), ", ", fmt_3(q[3]), "]")
+
+tau_ci <- quantile(tau, c(.025, .5, .975))
+vpc_ci <- quantile(VPC, c(.025, .5, .975))
+pi_ci <- quantile(p_new, c(.025, .5, .975))
+
+note_tau <- paste0(
+  "Between-study SD τ (log scale): ",
+  ci_txt(tau_ci),
+  "."
+)
+
+note_vpc <- paste0(
+  "Poisson VPC: ",
+  ci_txt(vpc_ci),
+  "."
+)
+
+note_pi <- paste0(
+  "95% predictive interval for true count per patient in a new study: ",
+  ci_txt(pi_ci),
+  "."
+)
+```
+
+## Tabular results
+
+```{r}
+
+nd <- data.frame(
+  Autor = unique(data_counts$Autor),
+  n_patients = 1
+)
+
+
+fit <- fitted(
+  model_EHC_count,
+  newdata = nd,
+  re_formula = NULL,
+  scale = "response",
+  summary = TRUE
+)
+
+ran_effs <- data.frame(
+  Autor = nd$Autor,
+  fit[, c("Estimate", "Q2.5", "Q97.5")]
+)
+
+pooled_row <- data.frame(
+  Autor = "Pooled estimate",
+  Estimate = exp(fixef(model_EHC_count)["Intercept", "Estimate"]),
+  Q2.5 = exp(fixef(model_EHC_count)["Intercept", "Q2.5"]),
+  Q97.5 = exp(fixef(model_EHC_count)["Intercept", "Q97.5"])
+)
+
+tr <- rbind(ran_effs, pooled_row) %>%
+  dplyr::mutate(
+    EHCperPatient_empirical = c(data_counts$n_EHC/data_counts$n_patients,
+                                count_hat_pooled),
+    N = c(data_counts$n_patients, sum(data_counts$n_patients)),
+    N_EHC = c(data_counts$n_EHC_patients, sum(data_counts$n_EHC_patients))
+  ) %>%
+  dplyr::rename(
+    EHCperPatient_ModelEst = Estimate
+  ) %>%
+  dplyr::select(
+    Autor, N, N_EHC, EHCperPatient_empirical, EHCperPatient_ModelEst, everything()
+  )
+
+tr %>%
+  dplyr::mutate(
+    dplyr::across(
+      where(is.numeric),
+      ~ round(.x, 3)
+    )
+  ) %>%
+  dplyr::mutate(
+    `Estimated count/patient [95% CrI]` = paste0(
+      EHCperPatient_ModelEst, " [", `Q2.5`, ", ", `Q97.5`, "]"
+    )
+  ) %>%
+  dplyr::rename(
+    `Observed EHC count/patient` = `EHCperPatient_empirical`
+  ) %>%
+  dplyr::select(
+    Autor, N, `Observed EHC count/patient`, `Estimated count/patient [95% CrI]`
+  ) %>%
+  kableExtra::kable(
+    align = "lrrr",
+    caption = 'Observed and model-estimated counts of EHC per patient across included studies. For each study, the table reports the sample size (N), the empirical mean number of EHC per patient, and the study-specific posterior median rate with 95% credible intervals (CrI) obtained from a Bayesian Poisson mixed-effects model with a log link, an offset for the number of patients, and a random intercept for study. The pooled estimate represents the expected number of EHC per patient in a typical study. Between-study heterogeneity is summarized by the standard deviation of the study-specific random intercepts (τ) on the log scale and by the Poisson variance partition coefficient (VPC). The 95% predictive interval denotes the expected range of the true underlying EHC count per patient in a new study, reflecting between-study heterogeneity rather than sampling variability.'
+    ) %>%
+  kableExtra::footnote(
+    general = c(note_tau, note_vpc, note_pi),
+    general_title = "",
+    threeparttable = TRUE
+  )  %>% 
+  kableExtra::kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"),
+    font_size = 12
+  ) 
+```
+
+## Forest plot
+
+```{r, fig.height=5, fig.width=7}
+#| fig-cap: "Forest plot of mean EHC count per patient. Crosses (x) represent empirical means, and error bars represent 95% credible intervals  based on a mixed-effect Poisson regression model"
+
+plot_data_counts <- tr %>%
+  dplyr::mutate(
+    Autor = factor(
+      Autor,
+      levels = c(
+        "Pooled estimate",
+        data_prevalence$Autor[order(
+          data_prevalence$Year,
+          decreasing = TRUE
+        )]
+      )
+    ),
+    is_pooled = dplyr::if_else(
+      Autor == "Pooled estimate",
+      "Pooled",
+      "Study"
+    ),
+    is_bold = dplyr::if_else(
+      Autor == "Pooled estimate",
+      "bold",
+      "plain"
+    )
+  )
+
+forest_plot_counts <- ggplot(
+  plot_data_counts,
+  aes(
+    x = EHCperPatient_ModelEst,
+    y = Autor
+  )
+) +
+  geom_vline(
+    data = dplyr::filter(
+      plot_data_counts,
+      is_pooled == "Pooled"
+    ),
+    aes(xintercept = EHCperPatient_ModelEst),
+    linetype = "dashed",
+    color = "grey40"
+  ) +
+  geom_errorbarh(
+    aes(
+      xmin = Q2.5,
+      xmax = Q97.5,
+      color = is_pooled
+    ),
+    height = 0.2,
+    linewidth = 0.8
+  ) +
+  geom_point(
+    aes(
+      size = N,
+      color = is_pooled
+    )
+  ) +
+  geom_point(
+    aes(x = EHCperPatient_empirical),
+    shape = 4,
+    size = 4,
+    alpha = 0.6,
+    color = "black"
+  ) +
+  scale_color_manual(
+    values = c(
+      "Study" = "grey20",
+      "Pooled" = "firebrick"
+    )
+  ) +
+  scale_x_continuous(
+    labels = scales::number_format(accuracy = 0.1),
+    limits = c(0, NA),
+    expand = expansion(mult = c(0, 0.05))
+  ) +
+  labs(
+    x = "Mean EHC count per patient (95% CrI)",
+    y = NULL,
+    size = "Sample size (N)"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    panel.grid.minor = element_blank(),
+    axis.title.x = element_text(
+      size = 12
+    ),
+    axis.text.x = element_text(
+      size = 11
+    ),
+    axis.text.y = element_text(
+      size = 11,
+      face = dplyr::if_else(
+        levels(plot_data$Autor) == "Pooled estimate",
+        "bold",
+        "plain"
+      )
+    ),
+    legend.title = element_text(size = 11),
+    legend.text = element_text(size = 11)
+  ) +
+  guides(color = "none")
+
+forest_plot_counts
+```
+
+# Proportion of vessel categories
+
+## Show data
+
+```{r}
+kableExtra::kable(
+  data_mult_raw %>%  
+    dplyr::select(-n_EHC, -Year) %>% 
+    dplyr::rename('n_EHC' = n_EHC2)
+  )
+```
+
+## Set prior
+
+```{r}
+y_matrix_old <- data_mult_raw %>%
+  dplyr::select(
+    Inferior_phrenic_artery,
+    Coeliac_trunk_branches,
+    SMA_branches,
+    Renal_adrenal_arteries,
+    IMA,
+    Abdominal_wall_artery
+  ) %>%
+  as.matrix()
+
+col_sums_old <- colSums(y_matrix_old)
+col_names_old <- colnames(y_matrix_old)
+
+ref_count_old <- col_sums_old["Inferior_phrenic_artery"]
+
+other_counts_old <- col_sums_old[names(col_sums_old) != "Inferior_phrenic_artery"]
+other_names_old <- names(other_counts_old)
+
+calc_multinom_logit <- function(target_count, reference_count) {
+  log((target_count + 0.01) / (reference_count + 0.01))
+}
+
+prior_intercepts_old <- purrr::map(
+  seq_along(other_counts_old),
+  function(i) {
+    target_val <- other_counts_old[i]
+    target_name <- other_names_old[i]
+    
+    l_val <- calc_multinom_logit(target_val, ref_count_old)
+    
+    dpar_name <- paste0("mu", gsub("[_.]", "", target_name))
+    
+    brms::set_prior(
+      paste0("student_t(3, ", round(l_val, 3), ", 10)"),
+      class = "Intercept",
+      dpar = dpar_name
+    )
+  }
+)
+
+prior_multinomial <- c(
+  do.call(c, prior_intercepts_old),
+  brms::set_prior(
+    "exponential(1)",
+    class = "sd",
+    dpar = paste0("mu", gsub("[_.]", "", other_names_old))
+  )
+)
+```
+
+## Fit model
+
+```{r}
+
+data_model <- data_mult_raw %>%
+  dplyr::select(
+    Autor, n_EHC2,
+    Inferior_phrenic_artery,
+    Coeliac_trunk_branches,
+    SMA_branches,
+    Renal_adrenal_arteries,
+    IMA,
+    Abdominal_wall_artery
+  ) %>%
+  dplyr::mutate(Y = as.matrix(across(c(
+    Inferior_phrenic_artery,
+    Coeliac_trunk_branches,
+    SMA_branches,
+    Renal_adrenal_arteries,
+    IMA,
+    Abdominal_wall_artery
+  ))))
+
+run2(
+  name = "model_vessels_multinom",
+  expr = {
+    brm(
+      Y | trials(n_EHC2) ~ 1 + (1 | Autor),
+  family = multinomial(link = "logit", refcat = "Inferior_phrenic_artery"),
+  data = data_model,
+  prior = prior_multinomial,
+  backend = "cmdstanr",
+  seed = seeding,
+  cores = 1, chains = 4,
+  iter = 6000, warmup = 2000,
+  control = list(adapt_delta = 0.95)
+)
+  },
+  reuse = TRUE
+)
+
+## check prior of the model
+prior_summary(model_vessels_multinom)
+
+```
+
+## Check model
+
+```{r}
+
+## model summary
+summary(model_vessels_multinom)
+
+## check convergence
+plot(model_vessels_multinom)
+```
+
+## Between study heterogeneity
+
+```{r}
+vessels_all <- c(
+  "Inferior_phrenic_artery",
+  "Coeliac_trunk_branches",
+  "SMA_branches",
+  "Renal_adrenal_arteries",
+  "IMA",
+  "Abdominal_wall_artery"
+)
+
+dpars_raw <- c(
+  "muCoeliactrunkbranches",
+  "muSMAbranches",
+  "muRenaladrenalarteries",
+  "muIMA",
+  "muAbdominalwallartery"
+)
+
+draws <- brms::as_draws_df(model_vessels_multinom)
+
+set.seed(seeding)
+
+# 1. Simulace p_new_probs
+p_new_probs <- draws %>%
+  tibble::as_tibble() %>%
+  dplyr::mutate(
+    dplyr::across(
+      dplyr::all_of(paste0("b_", dpars_raw, "_Intercept")),
+      ~ . + rnorm(
+        n(),
+        0,
+        draws[[gsub("b_", "sd_Autor__", dplyr::cur_column())]]
+      ),
+      .names = "sim_{.col}"
+    )
+  ) %>%
+  dplyr::mutate(
+    dplyr::across(
+      dplyr::starts_with("sim_b_mu"),
+      ~ exp(.),
+      .names = "exp_{.col}"
+    )
+  ) %>%
+  dplyr::mutate(
+    exp_sum = 1 + rowSums(
+      dplyr::select(
+        .,
+        dplyr::starts_with("exp_sim_b_mu")
+      )
+    )
+  ) %>%
+  dplyr::mutate(
+    Inferior_phrenic_artery = 1 / exp_sum
+  ) %>%
+  dplyr::mutate(
+    dplyr::across(
+      dplyr::starts_with("exp_sim_b_mu"),
+      ~ . / exp_sum,
+      .names = "{.col}_prob"
+    )
+  )
+
+names(p_new_probs) <- names(p_new_probs) %>%
+  gsub("exp_sim_b_mu", "", .) %>%
+  gsub("_Intercept_prob", "", .) %>%
+  gsub("Coeliactrunkbranches", "Coeliac_trunk_branches", .) %>%
+  gsub("SMAbranches", "SMA_branches", .) %>%
+  gsub("Renaladrenalarteries", "Renal_adrenal_arteries", .) %>%
+  gsub("Abdominalwallartery", "Abdominal_wall_artery", .)
+
+p_new_probs <- p_new_probs %>%
+  dplyr::select(dplyr::all_of(vessels_all))
+
+pooled_probs <- draws %>%
+  tibble::as_tibble() %>%
+  dplyr::mutate(
+    dplyr::across(
+      dplyr::all_of(paste0("b_", dpars_raw, "_Intercept")),
+      ~ exp(.),
+      .names = "exp_{.col}"
+    )
+  ) %>%
+  dplyr::mutate(
+    sum_exp = 1 + rowSums(dplyr::select(., dplyr::starts_with("exp_b_mu")))
+  ) %>%
+  dplyr::mutate(
+    Inferior_phrenic_artery = 1 / sum_exp,
+    Coeliac_trunk_branches = exp_b_muCoeliactrunkbranches_Intercept / sum_exp,
+    SMA_branches = exp_b_muSMAbranches_Intercept / sum_exp,
+    Renal_adrenal_arteries = exp_b_muRenaladrenalarteries_Intercept / sum_exp,
+    IMA = exp_b_muIMA_Intercept / sum_exp,
+    Abdominal_wall_artery = exp_b_muAbdominalwallartery_Intercept / sum_exp
+  ) %>%
+  dplyr::select(dplyr::all_of(vessels_all))
+
+
+tau_samples_list <- purrr::map(
+  dpars_raw,
+  ~ draws[[paste0("sd_Autor__", .x, "_Intercept")]]
+)
+
+names(tau_samples_list) <- dpars_raw %>%
+  gsub("mu", "", .) %>%
+  gsub("Coeliactrunkbranches", "Coeliac_trunk_branches", .) %>%
+  gsub("SMAbranches", "SMA_branches", .) %>%
+  gsub("Renaladrenalarteries", "Renal_adrenal_arteries", .) %>%
+  gsub("Abdominalwallartery", "Abdominal_wall_artery", .)
+
+tau_quantiles <- purrr::map(
+  tau_samples_list,
+  ~ quantile(.x, c(0.025, 0.5, 0.975))
+)
+
+i2_quantiles <- purrr::map(
+  tau_samples_list,
+  ~ quantile(.x^2 / (.x^2 + (pi^2 / 3)), c(0.025, 0.5, 0.975))
+)
+
+p_new_list <- purrr::map(
+  p_new_probs,
+  ~ quantile(.x, c(0.025, 0.5, 0.975))
+)
+
+final_heterogeneity_table <- tibble::tibble(
+  vessel = vessels_all
+) %>%
+  dplyr::mutate(
+    tau_res = purrr::map_chr(
+      vessel,
+      function(v) {
+        if (v %in% names(tau_quantiles)) {
+          ci_txt(tau_quantiles[[v]])
+        } else {
+          NA_character_
+        }
+      }
+    ),
+    i2_res = purrr::map_chr(
+      vessel,
+      function(v) {
+        if (v %in% names(i2_quantiles)) {
+          ci_txt(i2_quantiles[[v]])
+        } else {
+          NA_character_
+        }
+      }
+    ),
+    pi_res = purrr::map_chr(
+      vessel,
+      function(v) {
+        ci_txt(p_new_list[[v]])
+      }
+    )
+  )
+
+```
+
+## Tabular results of model
+
+```{r}
+
+study_fitted <- fitted(
+  model_vessels_multinom,
+  newdata = data.frame(Autor = unique(data_mult_raw$Autor), n_EHC2 = 1),
+  re_formula = NULL,
+  summary = TRUE
+)
+
+model_categories <- dimnames(study_fitted)[[3]]
+
+study_estimates_final <- purrr::map_dfc(
+  seq_along(model_categories),
+  function(i) {
+    mat <- study_fitted[, , i]
+    
+    res <- tibble::tibble(
+      !!model_categories[i] := purrr::map_chr(
+        seq_len(nrow(mat)),
+        function(row_idx) {
+          ci_txt(mat[row_idx, c("Q2.5", "Estimate", "Q97.5")])
+        }
+      )
+    )
+    return(res)
+  }
+) %>%
+  dplyr::mutate(
+    Autor = unique(data_mult_raw$Autor),
+    .before = 1
+  )
+
+pooled_estimates_wide <- purrr::map_dfc(
+  model_categories,
+  function(v) {
+    clean_v <- gsub("P\\(Y = |\\)", "", v) %>%
+      gsub("_", "", .)
+
+    prob_col <- names(pooled_probs)[
+      gsub("_", "", names(pooled_probs)) == clean_v
+    ]
+
+    if (length(prob_col) == 0) {
+       prob_col <- names(pooled_probs)[match(v, names(pooled_probs))]
+    }
+    
+    q <- quantile(
+      pooled_probs[[prob_col]], 
+      c(0.025, 0.5, 0.975)
+    )
+    
+    tibble::tibble(
+      !!v := ci_txt(q)
+    )
+  }
+) %>%
+  dplyr::mutate(
+    Autor = "Pooled estimate",
+    .before = 1
+  )
+
+final_table <- dplyr::bind_rows(
+  study_estimates_final,
+  pooled_estimates_wide
+)
+
+clean_colnames <- names(final_table) %>%
+  gsub("P\\(Y = ", "", .) %>%
+  gsub("\\)", "", .) %>%
+  gsub("_", " ", .)
+
+
+final_table %>%
+  kableExtra::kable(
+    col.names = clean_colnames,
+    align = c("l", rep("r", length(model_categories))),
+    caption = "Model-estimated proportions [95% CrI] of arterial sources for EHC, based on a Bayesian hierarchical multinomial model with a logit link and a random intercept for study"
+  ) %>%
+  kableExtra::kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"),
+    font_size = 12
+  ) %>%
+  kableExtra::footnote(
+    general = c(
+      "Heterogeneity summary:",
+      purrr::map_chr(
+        seq_len(nrow(final_heterogeneity_table)),
+        function(i) {
+          row <- final_heterogeneity_table[i, ]
+          paste0(
+            gsub("_", " ", row$vessel), ": τ=", 
+            ifelse(is.na(row$tau_res), "-", row$tau_res),
+            "; I²=", ifelse(is.na(row$i2_res), "-", row$i2_res),
+            "; PI=", row$pi_res
+          )
+        }
+      )
+    ),
+    general_title = "",
+    threeparttable = TRUE
+  )
+```
+
+## Empirical proportions 
+
+```{r}
+empirical_data <- data_mult_raw %>%
+  dplyr::select(
+    Autor,
+    n_EHC2,
+    dplyr::all_of(vessels_all)
+  ) %>%
+  dplyr::mutate(
+    dplyr::across(
+      dplyr::all_of(vessels_all),
+      ~ .x / n_EHC2
+    )
+  )
+
+total_row <- data_mult_raw %>%
+  dplyr::summarise(
+    Autor = "Total / Overall",
+    n_EHC2 = sum(n_EHC2),
+    dplyr::across(
+      dplyr::all_of(vessels_all),
+      ~ sum(.x) / sum(n_EHC2)
+    )
+  )
+
+empirical_final <- dplyr::bind_rows(
+  empirical_data,
+  total_row
+)
+
+clean_empirical_colnames <- names(empirical_final) %>%
+  gsub("_", " ", .) %>%
+  gsub("n EHC2", "Count of EHCs", .)
+
+
+empirical_final %>%
+  kableExtra::kable(
+    col.names = clean_empirical_colnames,
+    digits = 3,
+    align = c("l", "c", rep("r", length(vessels_all))),
+    caption = "Empirical proportions of arterial sources for EHC across included studies."
+  ) %>%
+  kableExtra::kable_styling(
+    bootstrap_options = c(
+      "striped",
+      "hover",
+      "condensed"
+    ),
+    font_size = 12
+  ) %>%
+  kableExtra::row_spec(
+    nrow(empirical_final),
+    bold = TRUE,
+    extra_css = "border-top: 2px solid black;"
+  )
+```
+
+
+# Proportion of specific vessels
+
+## Show data
+
+```{r}
+kableExtra::kable(
+  data_mult_spec %>%  
+    dplyr::select(-n_EHC, -Year) %>% 
+    dplyr::rename('n_EHC' = n_EHC2)
+  )
+
+skimr::skim(data_mult_spec)
+```
+
+There is no gastric artery case. Lets remove this from the data.
+
+```{r}
+data_mult_spec <- data_mult_spec %>% dplyr::select(-Gastric_artery)
+```
+
+
+## Set prior
+
+```{r}
+dpars_new <- c(
+  "muCoeliactrunk",
+  "muLeftgastricartery",
+  "muPeriportalcollateralvessels",
+  "muSplenicartery",
+  "muLeftgastroepiploic",
+  "muGDA",
+  "muRightgastric",
+  "muRightgastroepiploic",
+  "muCystic",
+  "muBileductartery",
+  "muPancreatoduodenalartery",
+  "muDorsalpancreatic",
+  "muOmentalarteries",
+  "muSMAorbranchSMA",
+  "muRightormiddlecolicartery",
+  "muRightrenalorcapsular",
+  "muAdrenalarteries",
+  "muIMA",
+  "muIntercostalarteriesplussubcostal",
+  "muLumbar"
+)
+
+vessels_spec <- c(
+  "Inferior_phrenic_artery",
+  "Coeliac_trunk",
+  "Left_gastric_artery",
+  "Periportal_collateral_vessels",
+  "Splenic_artery",
+  "Left_gastroepiploic",
+  "GDA",
+  "Right_gastric",
+  "Right_gastroepiploic",
+  "Cystic",
+  "Bile_duct_artery",
+  "Pancreatoduodenal_artery",
+  "Dorsal_pancreatic",
+  "Omental_arteries",
+  "SMA_or_branch_SMA",
+  "Right_or_middle_colic_artery",
+  "Right_renal_or_capsular",
+  "Adrenal_arteries",
+  "IMA",
+  "Intercostal_arteries_plus_subcostal",
+  "Lumbar"
+)
+
+data_mult_spec <- data_mult_spec %>%
+  dplyr::select(
+    Autor,
+    n_EHC2,
+    dplyr::all_of(vessels_spec)
+  ) %>%
+  dplyr::mutate(
+    Y = as.matrix(
+      dplyr::across(
+        dplyr::all_of(vessels_spec)
+      )
+    )
+  )
+
+y_matrix <- data_mult_spec$Y
+col_sums <- colSums(y_matrix)
+col_names <- colnames(y_matrix)
+
+ref_idx <- which(col_names == "Inferior_phrenic_artery")
+ref_count <- col_sums[ref_idx]
+
+other_counts <- col_sums[-ref_idx]
+other_names <- col_names[-ref_idx]
+
+calc_multinom_logit <- function(target_count, reference_count) {
+  log((target_count + 0.01) / (reference_count + 0.01))
+}
+
+prior_intercepts <- purrr::map(
+  seq_along(other_counts),
+  function(i) {
+    target_val <- other_counts[i]
+    target_name <- other_names[i]
+    
+    l_val <- calc_multinom_logit(target_val, ref_count)
+    
+    dpar_name <- paste0("mu", gsub("[_.]", "", target_name))
+    
+    brms::set_prior(
+      paste0("student_t(3, ", round(l_val, 3), ", 10)"),
+      class = "Intercept",
+      dpar = dpar_name
+    )
+  }
+)
+
+prior_multinomial <- c(
+  do.call(c, prior_intercepts),
+  brms::set_prior(
+    "exponential(1)",
+    class = "sd",
+    dpar = paste0("mu", gsub("[_.]", "", other_names))
+  )
+)
+
+prior_multinomial
+```
+
+## Fit model
+
+```{r}
+
+run2(
+  name = "model_vessels_multinom_spec",
+  expr = {
+    brms::brm(
+      Y | trials(n_EHC2) ~ 1 + (1 | Autor),
+      family = brms::multinomial(
+        link = "logit", 
+        refcat = "Inferior_phrenic_artery"
+      ),
+      data = data_mult_spec,
+      prior = prior_multinomial,
+      backend = "cmdstanr",
+      seed = seeding,
+      cores = 1, 
+      chains = 4,
+      iter = 6000, 
+      warmup = 2000,
+      control = list(adapt_delta = 0.95)
+    )
+  },
+  reuse = TRUE
+)
+
+prior_summary(model_vessels_multinom_spec)
+
+```
+
+## Check model
+
+```{r}
+
+## model summary
+summary(model_vessels_multinom_spec)
+
+## check convergence
+#plot(model_vessels_multinom_spec)
+```
+
+## Between study heterogeneity
+
+```{r}
+vessels_all <- vessels_spec
+dpars_spec <- dpars_new
+
+draws <- brms::as_draws_df(model_vessels_multinom_spec)
+
+set.seed(seeding)
+
+# 2. AUTOMATICKÁ DETEKCE PARAMETRŮ Z MODELU
+# Najde všechny parametry začínající "b_mu" a končící "Intercept"
+all_b_names <- colnames(draws)
+dpars_raw_full <- grep("^b_mu.*_Intercept$", all_b_names, value = TRUE)
+# Očistíme na čisté dpars (např. "muCoeliactrunkbranches")
+dpars_raw <- gsub("^b_|_Intercept$", "", dpars_raw_full)
+
+set.seed(seeding)
+
+# --- 3. SIMULACE P_NEW_PROBS ---
+p_new_probs <- draws %>%
+  tibble::as_tibble() %>%
+  dplyr::mutate(
+    dplyr::across(
+      dplyr::all_of(paste0("b_", dpars_raw, "_Intercept")),
+      ~ . + rnorm(n(), 0, draws[[gsub("b_", "sd_Autor__", dplyr::cur_column())]]),
+      .names = "sim_{.col}"
+    )
+  ) %>%
+  dplyr::mutate(
+    dplyr::across(dplyr::starts_with("sim_b_mu"), ~ exp(.), .names = "exp_{.col}")
+  ) %>%
+  dplyr::mutate(
+    exp_sum = 1 + rowSums(dplyr::select(., dplyr::starts_with("exp_sim_b_mu")))
+  ) %>%
+  dplyr::mutate(
+    Inferior_phrenic_artery = 1 / exp_sum
+  ) %>%
+  dplyr::mutate(
+    dplyr::across(
+      dplyr::starts_with("exp_sim_b_mu"),
+      ~ . / exp_sum,
+      .names = "{.col}_prob"
+    )
+  )
+
+clean_names_map <- setNames(vessels_all, gsub("_", "", vessels_all))
+
+fix_names <- function(x) {
+
+  clean_key <- gsub("exp_sim_b_mu|_Intercept_prob", "", x)
+
+  if (clean_key %in% names(clean_names_map)) {
+    return(clean_names_map[[clean_key]])
+  }
+  return(x)
+}
+
+names(p_new_probs) <- sapply(names(p_new_probs), fix_names)
+p_new_probs <- p_new_probs %>% dplyr::select(dplyr::all_of(vessels_all))
+
+
+pooled_probs <- draws %>%
+  tibble::as_tibble() %>%
+  dplyr::mutate(
+    dplyr::across(dplyr::all_of(paste0("b_", dpars_raw, "_Intercept")), ~ exp(.), .names = "exp_{.col}")
+  ) %>%
+  dplyr::mutate(
+    sum_exp = 1 + rowSums(dplyr::select(., dplyr::starts_with("exp_b_mu")))
+  ) %>%
+  dplyr::mutate(
+    Inferior_phrenic_artery = 1 / sum_exp
+  )
+
+
+for (dpar in dpars_raw) {
+  raw_id <- gsub("mu", "", dpar)
+  nice_name <- clean_names_map[[raw_id]]
+  pooled_probs[[nice_name]] <- pooled_probs[[paste0("exp_b_", dpar, "_Intercept")]] / pooled_probs$sum_exp
+}
+
+pooled_probs <- pooled_probs %>% dplyr::select(dplyr::all_of(vessels_all))
+
+
+tau_samples_list <- purrr::map(
+  dpars_raw, ~ draws[[paste0("sd_Autor__", .x, "_Intercept")]]
+  )
+names(tau_samples_list) <- sapply(gsub("mu", "", dpars_raw), function(x) clean_names_map[[x]])
+
+tau_quantiles <- purrr::map(tau_samples_list, ~ quantile(.x, c(0.025, 0.5, 0.975)))
+i2_quantiles  <- purrr::map(tau_samples_list, ~ quantile(.x^2 / (.x^2 + (pi^2 / 3)), c(0.025, 0.5, 0.975)))
+p_new_list    <- purrr::map(p_new_probs,      ~ quantile(.x, c(0.025, 0.5, 0.975)))
+
+final_heterogeneity_table <- tibble::tibble(vessel = vessels_all) %>%
+  dplyr::mutate(
+    tau_res = purrr::map_chr(vessel, ~ if (.x %in% names(tau_quantiles)) ci_txt(tau_quantiles[[.x]]) else NA_character_),
+    i2_res  = purrr::map_chr(vessel, ~ if (.x %in% names(i2_quantiles)) ci_txt(i2_quantiles[[.x]]) else NA_character_),
+    pi_res  = purrr::map_chr(vessel, ~ ci_txt(p_new_list[[.x]]))
+  )
+```
+
+## Tabular results of model
+
+```{r}
+
+study_fitted <- fitted(
+  model_vessels_multinom_spec,
+  newdata = data.frame(Autor = unique(data_mult_spec$Autor), n_EHC2 = 1),
+  re_formula = NULL,
+  summary = TRUE
+)
+
+model_categories <- dimnames(study_fitted)[[3]]
+
+study_estimates_final <- purrr::map_dfc(
+  seq_along(model_categories),
+  function(i) {
+    mat <- study_fitted[, , i]
+    
+    res <- tibble::tibble(
+      !!model_categories[i] := purrr::map_chr(
+        seq_len(nrow(mat)),
+        function(row_idx) {
+          ci_txt(mat[row_idx, c("Q2.5", "Estimate", "Q97.5")])
+        }
+      )
+    )
+    return(res)
+  }
+) %>%
+  dplyr::mutate(
+    Autor = unique(data_mult_spec$Autor),
+    .before = 1
+  )
+
+pooled_estimates_wide <- purrr::map_dfc(
+  model_categories,
+  function(v) {
+    clean_v <- gsub("P\\(Y = |\\)", "", v) %>%
+      gsub("_", "", .)
+
+    prob_col <- names(pooled_probs)[
+      gsub("_", "", names(pooled_probs)) == clean_v
+    ]
+
+    if (length(prob_col) == 0) {
+       prob_col <- names(pooled_probs)[match(v, names(pooled_probs))]
+    }
+    
+    q <- quantile(
+      pooled_probs[[prob_col]], 
+      c(0.025, 0.5, 0.975)
+    )
+    
+    tibble::tibble(
+      !!v := ci_txt(q)
+    )
+  }
+) %>%
+  dplyr::mutate(
+    Autor = "Pooled estimate",
+    .before = 1
+  )
+
+final_table <- dplyr::bind_rows(
+  study_estimates_final,
+  pooled_estimates_wide
+)
+
+clean_colnames <- names(final_table) %>%
+  gsub("P\\(Y = ", "", .) %>%
+  gsub("\\)", "", .) %>%
+  gsub("_", " ", .)
+
+
+final_table %>%
+  kableExtra::kable(
+    col.names = clean_colnames,
+    align = c("l", rep("r", length(model_categories))),
+    caption = "Model-estimated proportions [95% CrI] of arterial sources for EHC, based on a Bayesian hierarchical multinomial model with a logit link and a random intercept for study"
+  ) %>%
+  kableExtra::kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed"),
+    font_size = 12
+  ) %>%
+  kableExtra::footnote(
+    general = c(
+      "Heterogeneity summary:",
+      purrr::map_chr(
+        seq_len(nrow(final_heterogeneity_table)),
+        function(i) {
+          row <- final_heterogeneity_table[i, ]
+          paste0(
+            gsub("_", " ", row$vessel), ": τ=", 
+            ifelse(is.na(row$tau_res), "-", row$tau_res),
+            "; I²=", ifelse(is.na(row$i2_res), "-", row$i2_res),
+            "; PI=", row$pi_res
+          )
+        }
+      )
+    ),
+    general_title = "",
+    threeparttable = TRUE
+  )
+```
+
+## Empirical proportions 
+
+```{r}
+empirical_data <- data_mult_spec %>%
+  dplyr::select(
+    Autor,
+    n_EHC2,
+    dplyr::all_of(vessels_all)
+  ) %>%
+  dplyr::mutate(
+    dplyr::across(
+      dplyr::all_of(vessels_all),
+      ~ .x / n_EHC2
+    )
+  )
+
+total_row <- data_mult_spec %>%
+  dplyr::summarise(
+    Autor = "Total / Overall",
+    n_EHC2 = sum(n_EHC2),
+    dplyr::across(
+      dplyr::all_of(vessels_all),
+      ~ sum(.x) / sum(n_EHC2)
+    )
+  )
+
+empirical_final <- dplyr::bind_rows(
+  empirical_data,
+  total_row
+)
+
+clean_empirical_colnames <- names(empirical_final) %>%
+  gsub("_", " ", .) %>%
+  gsub("n EHC2", "Count of EHCs", .)
+
+
+empirical_final %>%
+  kableExtra::kable(
+    col.names = clean_empirical_colnames,
+    digits = 3,
+    align = c("l", "c", rep("r", length(vessels_all))),
+    caption = "Empirical proportions of arterial sources for EHC across included studies."
+  ) %>%
+  kableExtra::kable_styling(
+    bootstrap_options = c(
+      "striped",
+      "hover",
+      "condensed"
+    ),
+    font_size = 12
+  ) %>%
+  kableExtra::row_spec(
+    nrow(empirical_final),
+    bold = TRUE,
+    extra_css = "border-top: 2px solid black;"
+  )
+```
+
+
+# Reproducibility
+
+```{r}
+sessionInfo()
+```
